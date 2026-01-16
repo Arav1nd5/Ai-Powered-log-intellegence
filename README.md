@@ -172,9 +172,10 @@ ESCALATED INCIDENT: PAYMENT
 ---
 
 ## License & contact
-- License: (Add your preferred license file, e.g., MIT)
+- License: MIT
 - Author: Arav1nd5 — feel free to open issues or PRs on the repo.
 
 ---
 
 Thanks for building a safety-first AI log assistant — designed to help engineers surface what matters, faster and more reliably.
+
