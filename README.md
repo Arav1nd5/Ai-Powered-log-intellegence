@@ -1,233 +1,180 @@
 # AI-Powered Log Intelligence Engine
-Lightweight, explainable, production-minded engine that blends deterministic rules with AI to find and prioritize incidents in noisy logs.
 
-[![Demo badge](https://img.shields.io/badge/demo-interactive-green)](#try-it-now)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Issues Welcome](https://img.shields.io/badge/contributions-welcome-orange)](https://github.com/Arav1nd5/Ai-Powered-log-intellegence/issues)
+A lightweight, explainable, production-minded engine that combines deterministic rules with AI to detect and prioritize incidents in noisy application logs.
 
 ---
 
-Why you'll love this project
-- Hybrid safety-first architecture: rules + AI with confidence fallbacks.
-- Explainable decisions: action + confidence + reason.
-- Format-agnostic: normalize logs early so logic stays simple.
-- Extensible: add integrations (Slack, PagerDuty) easily.
-
-Table of contents
-- Quick TL;DR
-- Interactive: Try it now (no AI key required)
-- Interactive Scenarios (copy & run)
-- How it works (short)
-- Quickstart (run locally)
-- Tuning & Tips
-- Extending the project
-- FAQ
-- Contributing & Contact
+## TL;DR (What this project does)
+- Read logs in many formats, normalize them, and detect incidents.
+- Use deterministic rules for safety-critical detection.
+- Use AI to provide semantic understanding, confidence scores, and reasons.
+- Merge rule and AI outputs with a confidence-based fallback so AI is advisory — never the single source of truth.
+- Produce human-friendly actions: log, notify, or escalate.
 
 ---
 
-TL;DR (read in 10 seconds)
-- This tool normalizes logs, applies deterministic rules, asks AI for semantic signals (when needed), merges results, and performs actions (log / notify / escalate). Rules win for safety; AI advises with confidence and human-readable reasons.
+## The problem (simple)
+Modern apps produce huge volumes of logs. Most logs are harmless; a few indicate real problems (payment failures, DB outages, security breaches). Manually finding those actionable logs is slow, error-prone, and not scalable.
+
+Existing tools either:
+- Rely on brittle rules (lots of false negatives/positives), or
+- Rely purely on AI (hard to trust in production).
+
+This project bridges both approaches: rules for safety and AI for semantic detection and explainability.
 
 ---
 
-Try it now — interactive demo (zero setup)
-This section lets you experience the behavior without an API key. The repository includes a "demo mode" you can run locally to see how the engine groups noise, notifies, and escalates.
-
-1. Save a sample log file (copy the example below to `demo-logs.txt`).
-2. Run the demo command that uses a simulated AI (no API key required).
-
-Sample logs — copy into `demo-logs.txt`
-```text
-2026-01-16 09:01:10,112 INFO Starting service X
-2026-01-16 09:02:15,333 WARN Slow response detected: /checkout
-2026-01-16 09:02:20,001 ERROR Payment gateway timeout for order=12345
-2026-01-16 09:03:00,104 INFO Background job completed
-2026-01-16 09:04:00,000 FATAL OutOfMemoryError in PaymentProcessor
-2026-01-16 09:05:00,500 WARN Possible brute force: failed_auth=12
-```
-
-Demo run (no API key)
-- Unix / macOS:
-```bash
-# demo mode uses a simulated AI for instant results
-java -cp bin Main --demo demo-logs.txt
-```
-- Windows (PowerShell):
-```powershell
-java -cp bin Main --demo demo-logs.txt
-```
-
-Expected demo output (friendly)
-```text
-[AI Simulation] Payment issue detected → ESCALATE (confidence: 0.92) - "Payment gateway timeout blocks transactions"
-ESCALATED INCIDENT: PAYMENT
-
-[FATAL] OutOfMemoryError in PaymentProcessor → IMMEDIATE ESCALATION
-
-Summary (non-critical logs):
-- 2 WARN(s) grouped: Slow response, possible brute force
-- 2 INFO(s) grouped
-```
-
-Why demo mode is useful
-- See the incident prioritization flow without wiring an AI API key.
-- Tweak the sample logs and immediately observe rule vs AI behavior.
-- Great for onboarding teammates or running workshops.
+## Key ideas (in plain English)
+- Use rules for obvious, high-risk cases (e.g., FATAL → immediate escalate).
+- Use AI to find hidden intent (e.g., “payment stuck” without an ERROR level).
+- Combine both using confidence thresholds so the final decision is traceable and safe.
+- Suppress low-value noise and group non-critical logs into summaries.
 
 ---
 
-Interactive Scenarios — try these (copy & run)
-Each scenario shows how the engine reacts to different signals. Save each scenario into a file and run the demo command above.
-
-Scenario A — Payment stall (copy to `scenario-payment.txt`)
-```text
-2026-01-16 12:00:01 INFO Request: /pay
-2026-01-16 12:00:02 INFO Payment attempt: order=9999 status=pending
-2026-01-16 12:00:10 ERROR Connection reset while calling gateway
-2026-01-16 12:00:15 INFO Retrying gateway call
-```
-What to expect: AI should detect "payment blocked" even if severity is not FATAL → escalate or notify depending on confidence and rule matches.
-
-Scenario B — Database flakiness (copy to `scenario-db.txt`)
-```text
-2026-01-16 13:00:01 WARN DB query slow: 5200ms
-2026-01-16 13:00:05 WARN DB connection pool maxed
-2026-01-16 13:00:06 ERROR Failed to obtain connection
-```
-What to expect: Rules tag database outages for escalation; AI provides reason and confidence for the team.
-
-Scenario C — Security anomaly (copy to `scenario-sec.txt`)
-```text
-2026-01-16 14:01:30 WARN multiple failed logins user=alice count=7
-2026-01-16 14:01:40 WARN unusual IP range 203.0.113.45
-```
-What to expect: AI may surface "possible brute force" and recommend notify/escalate based on thresholds.
+## What you get (features)
+- Log normalization for heterogeneous formats (timestamp, level, message).
+- Rule engine for deterministic mapping (severity, category).
+- AI analyzer that returns: action, confidence, explanation.
+- Incident detection engine that merges rule + AI and decides a final action.
+- Action resolver to map decisions to actions: Log, Notify, Escalate.
+- Console UI to run analysis, view summaries, and simulate workflows.
+- Extensible design (add new actions: Slack, PagerDuty, email, etc.)
 
 ---
 
-How it works (simple)
-- Normalize: Parse timestamp, level, message into LogEntry.
-- Rule engine: Fast deterministic checks (e.g., FATAL → escalate).
-- AI analyzer: Semantic understanding + confidence + reason (advisory).
-- Merger (IncidentDetectionEngine): rules + AI → final incident.
-- Action resolver: choose action (Log, Notify, Escalate).
-
-Design principle: AI advises, rules enforce safety.
+## High-level architecture (text diagram)
+Console UI (MenuController)
+  ↓
+Incident Detection Engine (merges rule + AI)
+  ├─ Rule Engine (deterministic)
+  └─ AI Analyzer (semantic)
+  ↓
+Action Resolver
+  ↓
+Actions (LogAction, NotifyAction, EscalateAction)
 
 ---
 
-Quickstart — run locally
-1. Clone
+## Layer-by-layer (short & simple)
+- Log Normalization (util): Parse many formats into a single LogEntry object.
+- Domain Models (model): LogEntry, Incident, AIResult, RuleResult — keep data clear and auditable.
+- Rule Engine: Fast, deterministic checks (e.g., FATAL => HIGH).
+- AI Analyzer: Returns semantic action, confidence, and human-readable reason.
+- Incident Detection Engine: Merges rule + AI; applies confidence-based fallback.
+- Action Resolver & Actions: Encapsulate "what to do" (log, notify, escalate).
+- Controller (MenuController): Console flow, rate-limit, aggregation.
+- Configuration (config/application.properties): API keys and environment settings.
+
+---
+
+## How it works (end-to-end)
+1. Choose "Analyze logs" from the console.
+2. Logs are read and normalized.
+3. Rules flag obvious incidents.
+4. For everything else, AI provides semantic analysis and confidence.
+5. The engine merges results:
+   - If rules say escalate, escalate.
+   - Else, if AI confidence is high enough, follow AI recommendation.
+   - Else, fall back to conservative/default behavior.
+6. Critical incidents are escalated immediately; non-critical logs are grouped and summarized.
+
+---
+
+## Why this design is safe & practical
+- Rules guarantee safety for critical cases.
+- AI provides explainability (reason + confidence) rather than opaque decisions.
+- Confidence thresholds and fallbacks prevent AI from being a single point of failure.
+- Layered architecture makes testing, auditing, and extension straightforward.
+
+---
+
+## How to get started (quick)
+1. Clone the repo:
 ```bash
 git clone https://github.com/Arav1nd5/Ai-Powered-log-intellegence.git
 cd Ai-Powered-log-intellegence
 ```
 
-2. Build
-- Unix/macOS:
-```bash
-javac -d bin $(find src -name "*.java")
-```
-- Windows (PowerShell):
-```powershell
-javac -d bin (Get-ChildItem -Recurse -Filter *.java | Select-Object -ExpandProperty FullName)
-```
-
-3. Configure (optional)
+2. Configure AI key:
 - Copy example config:
 ```bash
 cp config/application.properties.example config/application.properties
 ```
-- Edit `config/application.properties`:
+- Edit `config/application.properties` and set:
 ```
 GEMINI_API_KEY=YOUR_API_KEY_HERE
-AI_CONFIDENCE_THRESHOLD=0.75
 ```
-If you want to skip an AI provider for quick tests, use the `--demo` flag shown earlier.
 
-4. Run
+3. Compile (simple Java approach):
+- On Unix/macOS:
+```bash
+javac -d bin $(find src -name "*.java")
+```
+- On Windows (PowerShell):
+```powershell
+javac -d bin (Get-ChildItem -Recurse -Filter *.java | Select-Object -ExpandProperty FullName)
+```
+
+4. Run:
 ```bash
 java -cp bin Main
-# or
-java -cp bin Main --demo demo-logs.txt
 ```
+5. Choose from the menu:
+- `1. Analyze logs`
+- `2. Exit`
 
 ---
 
-Tune it — become the master
-- Confidence threshold: raise to be conservative, lower to be permissive.
-- Add domain-specific rules (e.g., payment gateway codes).
-- Add suppression patterns for noisy logs (e.g., health-checks).
-- Grouping rules: adjust aggregation window to control how logs are summarized.
+## Sample output (friendly)
+AI Decision:
+  Action    : ESCALATE  
+  Confidence: 0.91  
+  Reason    : Payment failure blocks transactions
+
+ESCALATED INCIDENT: PAYMENT
+
+---- Semantic Analysis Summary (Non-critical Logs) ----
+[2010-04-24 08:01:10,112] Initializing BulkOpsClient  
+[N/A] Application started successfully
+----------------------------------------------------
 
 ---
 
-Extending integrations (quick ideas)
-- Add notifiers: Slack, PagerDuty, Opsgenie, email.
-- Add sinks: write incidents to DB or event stream (Kafka).
-- Add ingestors: CloudWatch, Stackdriver, Datadog logs.
-
-Tip: Implement a new Action class (e.g., SlackAction) and register it in the ActionResolver — the layered design makes this straightforward.
+## Configuration notes
+- Keep API keys out of source control — use `config/application.properties` or environment variables.
+- Tune confidence thresholds in config to match your risk tolerance.
+- Add rule patterns for domain-specific signals (e.g., payment gateway error codes).
 
 ---
 
-FAQ — quick answers
-Q: Does the AI decide everything?
-A: No. AI is advisory. Rules enforce safety (e.g., FATAL always escalates).
-
-Q: Can I run without paying for an AI provider?
-A: Yes — run in demo mode (`--demo`) to exercise behavior using simulated AI responses.
-
-Q: Is this production-ready?
-A: The design is production-minded: fallback, retries, timeouts, and explainability are core ideas. Additional hardening (persistence, observability) is recommended before wide roll-out.
+## Extensibility ideas
+- Add outputs: Slack, PagerDuty, SMS, webhook sinks.
+- Add connectors: cloud logging services (CloudWatch, Stackdriver).
+- Add persistence: store incidents in a DB for long-term audit.
+- Add a lightweight web UI for richer dashboards.
 
 ---
 
-Contributing — interactive checklist
-- [ ] Star the repo ⭐
-- [ ] Open an issue describing a bug or feature
-- [ ] Fork → implement → open PR
-- [ ] Add tests for new features
-- [ ] Keep secrets out of commits
-
-If you'd like a starter issue, search "good first issue" or open one and tag it as "help wanted".
+## Design & engineering takeaways
+- Hybrid = safety + semantic power.
+- Explainability matters: show action, confidence, reason.
+- Normalize early so downstream logic is simpler.
+- Keep AI advisory: production systems must be resilient to model failures.
 
 ---
 
-Developer notes & keyboard shortcuts (for demoing live)
-- Run in terminal with `--demo` to show immediate results.
-- Use `--sample N` to generate N random logs for load testing (if implemented).
-- Use `<details>` sections when expanding docs in workshops.
+## Contributing
+- Bug reports and PRs welcome. Open an issue describing the problem or improvement.
+- Please follow repository code style and add tests for new behavior.
+- If adding external integration (e.g., PagerDuty), keep secrets out of the repo.
 
 ---
 
-Security & configuration
-- Never commit API keys. Use config file or environment variables.
-- Limit AI calls via rate limiting in controller layer.
-- Ensure audit logs record AI decisions for post-mortem.
+## License & contact
+- License: (Add your preferred license file, e.g., MIT)
+- Author: Arav1nd5 — feel free to open issues or PRs on the repo.
 
 ---
 
-Contact & license
-Author: Arav1nd5 — open issues or PRs on the repo.
-License: MIT (add LICENSE file).
-
----
-
-Interactive walkthrough (one-minute quick-play)
-1. Clone and compile.
-2. Create `demo-logs.txt` from the sample above.
-3. Run: `java -cp bin Main --demo demo-logs.txt`
-4. Observe how fatal rules escalate immediately and how the simulated AI surfaces semantic incidents with confidence and a short reason.
-5. Tweak logs and watch how outputs change — instant feedback is the fastest teacher.
-
----
-
-Thanks for checking out a safety-first AI log assistant — designed to help engineers surface what matters, faster and more reliably.
-If you'd like, I can:
-- Add a runnable demo script (bash & PowerShell),
-- Provide ready-made sample log generators,
-- Or produce GIFs of the CLI in action for the README.
-
-Would you like any of those added?
+Thanks for building a safety-first AI log assistant — designed to help engineers surface what matters, faster and more reliably.
