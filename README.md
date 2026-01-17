@@ -1,181 +1,186 @@
 # AI-Powered Log Intelligence Engine
 
-A lightweight, explainable, production-minded engine that combines deterministic rules with AI to detect and prioritize incidents in noisy application logs.
+A safety-first, explainable backend engine that finds real incidents in noisy logs using deterministic Rules + AI.
 
----
+Think “Splunk / Datadog logic — but focused, explainable, and console-based.”
 
-## TL;DR (What this project does)
-- Read logs in many formats, normalize them, and detect incidents.
-- Use deterministic rules for safety-critical detection.
-- Use AI to provide semantic understanding, confidence scores, and reasons.
-- Merge rule and AI outputs with a confidence-based fallback so AI is advisory — never the single source of truth.
-- Produce human-friendly actions: log, notify, or escalate.
+-------------------------------------------------------------------------------------------------------------------------------------------
 
----
+[![Language: Java](https://img.shields.io/badge/Language-Java-orange.svg)](#)
+[![Status: Prototype](https://img.shields.io/badge/Status-Prototype-yellowgreen.svg)](#)
 
-## The problem (simple)
-Modern apps produce huge volumes of logs. Most logs are harmless; a few indicate real problems (payment failures, DB outages, security breaches). Manually finding those actionable logs is slow, error-prone, and not scalable.
+❓Quick Overview
+- Reads logs across formats and normalizes them.
+- Filters noise using deterministic rules.
+- Uses AI for semantic understanding with confidence scores.
+- Always explains decisions and falls back safely when AI is uncertain.
+- Final actions: LOG_ONLY, NOTIFY, or ESCALATE.
 
-Existing tools either:
-- Rely on brittle rules (lots of false negatives/positives), or
-- Rely purely on AI (hard to trust in production).
+-------------------------------------------------------------------------------------------------------------------------------------------
 
-This project bridges both approaches: rules for safety and AI for semantic detection and explainability.
+## Why this project exists
+Most systems produce too many logs. Rules alone miss semantic issues; AI alone can be unsafe or unpredictable. This project combines both:
+- Rules for safety and deterministic checks.
+- AI for semantic reasoning and context.
+- Confidence-based arbitration so AI is never blindly trusted.
 
----
+Result: fewer false alarms, transparent reasoning, and actionable incidents.
 
-## Key ideas (in plain English)
-- Use rules for obvious, high-risk cases (e.g., FATAL → immediate escalate).
-- Use AI to find hidden intent (e.g., “payment stuck” without an ERROR level).
-- Combine both using confidence thresholds so the final decision is traceable and safe.
-- Suppress low-value noise and group non-critical logs into summaries.
+-------------------------------------------------------------------------------------------------------------------------------------------
 
----
+🧠Core ideas
+- Normalize early — convert any log format into one canonical structure.
+- Rule Engine handles obvious failures deterministically.
+- AI Analyzer provides semantic labels, reasons, and a confidence score.
+- ActionResolver decides final action using rule results + AI + confidence thresholds.
+- Explainability: every decision includes a human-readable rationale.
 
-## What you get (features)
-- Log normalization for heterogeneous formats (timestamp, level, message).
-- Rule engine for deterministic mapping (severity, category).
-- AI analyzer that returns: action, confidence, explanation.
-- Incident detection engine that merges rule + AI and decides a final action.
-- Action resolver to map decisions to actions: Log, Notify, Escalate.
-- Console UI to run analysis, view summaries, and simulate workflows.
-- Extensible design (add new actions: Slack, PagerDuty, email, etc.)
+-------------------------------------------------------------------------------------------------------------------------------------------
 
----
-
-## High-level architecture (text diagram)
-Console UI (MenuController)
+🧱 Architecture (at a glance)
+MenuController
   ↓
-Incident Detection Engine (merges rule + AI)
+IncidentDetectionEngine
   ├─ Rule Engine (deterministic)
-  └─ AI Analyzer (semantic)
+  └─ AI Analyzer (semantic + confidence)
   ↓
-Action Resolver
+ActionResolver
   ↓
-Actions (LogAction, NotifyAction, EscalateAction)
+Log | Notify | Escalate
 
----
+Design goals: layered separation, testability, and safe AI integration.
 
-## Layer-by-layer (short & simple)
-- Log Normalization (util): Parse many formats into a single LogEntry object.
-- Domain Models (model): LogEntry, Incident, AIResult, RuleResult — keep data clear and auditable.
-- Rule Engine: Fast, deterministic checks (e.g., FATAL => HIGH).
-- AI Analyzer: Returns semantic action, confidence, and human-readable reason.
-- Incident Detection Engine: Merges rule + AI; applies confidence-based fallback.
-- Action Resolver & Actions: Encapsulate "what to do" (log, notify, escalate).
-- Controller (MenuController): Console flow, rate-limit, aggregation.
-- Configuration (config/application.properties): API keys and environment settings.
+-------------------------------------------------------------------------------------------------------------------------------------------
 
----
+## Features
+- Flexible log normalization (supports multiple formats)
+- Regex-driven rule engine for deterministic safety checks
+- AI-driven semantic analysis with confidence
+- Confidence-based merge logic (rules can override poor-confidence AI)
+- Explainable decisions (human-readable reasons)
+- Console-first flow with summaries and rate-limiting
+- Extensible action hooks (Slack, Email, PagerDuty, persistence)
 
-## How it works (end-to-end)
-1. Choose "Analyze logs" from the console.
-2. Logs are read and normalized.
-3. Rules flag obvious incidents.
-4. For everything else, AI provides semantic analysis and confidence.
-5. The engine merges results:
-   - If rules say escalate, escalate.
-   - Else, if AI confidence is high enough, follow AI recommendation.
-   - Else, fall back to conservative/default behavior.
-6. Critical incidents are escalated immediately; non-critical logs are grouped and summarized.
+-------------------------------------------------------------------------------------------------------------------------------------------
 
----
+## Decision model summary
 
-## Why this design is safe & practical
-- Rules guarantee safety for critical cases.
-- AI provides explainability (reason + confidence) rather than opaque decisions.
-- Confidence thresholds and fallbacks prevent AI from being a single point of failure.
-- Layered architecture makes testing, auditing, and extension straightforward.
+- Rule Engine: deterministic verdicts (HIGH_PRIORITY issues)
+- AI Analyzer: semantic verdict + confidence (0.0–1.0) + textual reason
+- ActionResolver:
+  - If rule says ESCALATE → ESCALATE
+  - Else if AI confidence ≥ threshold → follow AI recommendation
+  - Else → conservative fallback (LOG_ONLY or NOTIFY depending on rule hints)
 
----
+Example actions:
+- LOG_ONLY — store and summarize
+- NOTIFY — send to monitoring channels
+- ESCALATE — page on-call / create incident
 
-## How to get started (quick)
-1. Clone the repo:
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+## How it works (step-by-step)
+1. User selects "Analyze logs"
+2. Log Normalizer parses raw logs → canonical events
+3. Rule Engine scans events for deterministic hits
+4. AI Analyzer runs semantic classification + returns reason + confidence
+5. Detection Engine merges rule + AI safely via ActionResolver
+6. Actions execute immediately; low-value logs are summarized at end
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+## Sample console output
+
+```
+AI Decision:
+  Action    : ESCALATE
+  Confidence: 0.91
+  Reason    : Payment failure blocks transactions
+ESCALATED INCIDENT: PAYMENT
+
+---- Semantic Analysis Summary ----
+[2010-04-24 08:01:10,112] Initializing BulkOpsClient
+[N/A] Application started successfully
+```
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+🛠️ Tech stack
+- Java (console backend)
+- Regex parsing for normalization
+- Gemini AI (semantic analysis / embeddings)
+- Plain file-based configuration
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+▶️ Quick start 
+
+1. Clone
 ```bash
 git clone https://github.com/Arav1nd5/Ai-Powered-log-intellegence.git
 cd Ai-Powered-log-intellegence
 ```
 
-2. Configure AI key:
-- Copy example config:
+2. Configure
 ```bash
 cp config/application.properties.example config/application.properties
-```
-- Edit `config/application.properties` and set:
-```
-GEMINI_API_KEY=YOUR_API_KEY_HERE
-```
-
-3. Compile (simple Java approach):
-- On Unix/macOS:
-```bash
-javac -d bin $(find src -name "*.java")
-```
-- On Windows (PowerShell):
-```powershell
-javac -d bin (Get-ChildItem -Recurse -Filter *.java | Select-Object -ExpandProperty FullName)
+# Edit config/application.properties to set environment & thresholds
+# Add your AI key as an environment variable:
+export GEMINI_API_KEY="YOUR_API_KEY_HERE"
+# (Windows PowerShell)
+$env:GEMINI_API_KEY="YOUR_API_KEY_HERE"
 ```
 
-4. Run:
+3. Build & Run (examples)
+- macOS / Linux (javac)
 ```bash
+find . -name "*.java" > sources.txt
+javac -d bin @sources.txt
 java -cp bin Main
 ```
-5. Choose from the menu:
-- `1. Analyze logs`
-- `2. Exit`
 
----
+- Windows (PowerShell)
+```powershell
+javac -d bin (Get-ChildItem -Recurse -Filter *.java).FullName
+java -cp bin Main
+```
 
-## Sample output (friendly)
-AI Decision:
-  Action    : ESCALATE  
-  Confidence: 0.91  
-  Reason    : Payment failure blocks transactions
+Notes:
+- The project assumes Java is installed (JDK 11+ recommended).
+- For large projects, use a build tool (Maven/Gradle) to simplify compilation.
 
-ESCALATED INCIDENT: PAYMENT
+-------------------------------------------------------------------------------------------------------------------------------------------
 
----- Semantic Analysis Summary (Non-critical Logs) ----
-[2010-04-24 08:01:10,112] Initializing BulkOpsClient  
-[N/A] Application started successfully
-----------------------------------------------------
+## Configuration highlights
+- config/application.properties
+  - GEMINI_API_KEY — required to enable AI Analyzer
 
----
+Example application.properties:
+```
+GEMINI_API_KEY = YOUR_API_KEY
+```
 
-## Configuration notes
-- Keep API keys out of source control — use `config/application.properties` or environment variables.
-- Tune confidence thresholds in config to match your risk tolerance.
-- Add rule patterns for domain-specific signals (e.g., payment gateway error codes).
+-------------------------------------------------------------------------------------------------------------------------------------------
 
----
+## Design principles
+- Normalize early
+- Explain every AI decision
+- Suppress noise, not information
+- Fail safe — never fail open
+- Keep AI advisory, not authoritative
 
-## Extensibility ideas
-- Add outputs: Slack, PagerDuty, SMS, webhook sinks.
-- Add connectors: cloud logging services (CloudWatch, Stackdriver).
-- Add persistence: store incidents in a DB for long-term audit.
-- Add a lightweight web UI for richer dashboards.
-
----
-
-## Design & engineering takeaways
-- Hybrid = safety + semantic power.
-- Explainability matters: show action, confidence, reason.
-- Normalize early so downstream logic is simpler.
-- Keep AI advisory: production systems must be resilient to model failures.
-
----
+-------------------------------------------------------------------------------------------------------------------------------------------
 
 ## Contributing
-- Bug reports and PRs welcome. Open an issue describing the problem or improvement.
-- Please follow repository code style and add tests for new behavior.
-- If adding external integration (e.g., PagerDuty), keep secrets out of the repo.
+1. Open an issue to discuss large changes.
+2. Fork, implement, and submit a PR.
+3. Keep changes small and focused. Provide tests for new logic (rules, parsing, action resolver).
+4. Follow the existing code style and add documentation to config files.
 
----
+-------------------------------------------------------------------------------------------------------------------------------------------
 
-## License & contact
-- License: MIT
-- Author: Arav1nd5 — feel free to open issues or PRs on the repo.
+## Author
+Arav1nd5 — open to feedback, issues, and discussions.
 
----
-
-Thanks for building a safety-first AI log assistant — designed to help engineers surface what matters, faster and more reliably.
-
+- GitHub: [Arav1nd5](https://github.com/Arav1nd5)
+- Project: [Ai-Powered-log-intellegence](https://github.com/Arav1nd5/Ai-Powered-log-intellegence)
