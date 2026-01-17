@@ -123,12 +123,7 @@ cd Ai-Powered-log-intellegence
 
 2. Configure
 ```bash
-cp config/application.properties.example config/application.properties
-# Edit config/application.properties to set environment & thresholds
-# Add your AI key as an environment variable:
-export GEMINI_API_KEY="YOUR_API_KEY_HERE"
-# (Windows PowerShell)
-$env:GEMINI_API_KEY="YOUR_API_KEY_HERE"
+GEMINI_API_KEY="YOUR_API_KEY_HERE"
 ```
 
 3. Build & Run (examples)
@@ -184,3 +179,4 @@ Arav1nd5 — open to feedback, issues, and discussions.
 
 - GitHub: [Arav1nd5](https://github.com/Arav1nd5)
 - Project: [Ai-Powered-log-intellegence](https://github.com/Arav1nd5/Ai-Powered-log-intellegence)
+
