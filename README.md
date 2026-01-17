@@ -1,4 +1,4 @@
-# AI-Powered Log Intelligence Engine
+# AI-Powered Log Intelligence Engine ( Console Based )
 
 A lightweight, explainable, production-minded engine that combines deterministic rules with AI to detect and prioritize incidents in noisy application logs.
 
@@ -177,5 +177,6 @@ Arav1nd5 — open to feedback, issues, and discussions.
 
 - GitHub: [Arav1nd5](https://github.com/Arav1nd5)
 - Project: [Ai-Powered-log-intellegence](https://github.com/Arav1nd5/Ai-Powered-log-intellegence)
+
 
 
